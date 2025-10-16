@@ -1,0 +1,44 @@
+Create a Bash script named run_pipeline.sh that automates a 5-step, AI-assisted penetration-testing workflow for use in an isolated lab. The script must:
+
+• Be POSIX/bash-safe and start with `#!/usr/bin/env bash` and `set -euo pipefail`.  
+• Accept exactly three args: <TARGET_IP> <LHOST> <LPORT> and validate them.  
+• Steps:
+  1) Run `nmap -sV --script vulners -T4 -oN` against TARGET_IP and save output to scan_<TARGET_IP>_.nmap. Fail fast if nmap not installed or scan file missing.
+  2) Stream a short header containing VARIABLES (TARGET_IP, LHOST, LPORT) followed by the Nmap output into `sgpt` to generate a concise professional Markdown penetration test report (save to scan_<TARGET_IP>_report.md). Use the exact prompt below for the report.
+  3) Feed the generated report into `sgpt` to produce ONLY a ready-to-run Bash exploit script (exploit.sh). Use the exact prompt below for exploit generation.
+  4) Make exploit.sh executable (handle lack of sudo gracefully).
+  5) Execute the exploit script and provide a final summary showing generated filenames and the provided variables.
+
+• Include clear progress echos for every step, timestamped artifact directory support, and reasonable error handling messages. Use `tee` to save AI outputs. Assume this runs in a trusted lab environment.
+
+Report-generation `sgpt` prompt (use exactly as STDIN will contain VARIABLES header then Nmap output):
+"You are a penetration tester. The input stream begins with VARIABLES (Target IP, LHOST, LPORT) followed by an Nmap + Vulners scan. Analyze and produce a professional penetration test report with the following sections (format in Markdown):
+
+0. Target IP, LHOST, LPORT
+1. Executive Summary – high-level overview of the security posture and risks.
+2. Target Information – IP, hostnames, OS, open ports/services.
+3. Detailed Findings – for each service: version, CVEs (with CVSS), known exploits (Metasploit/Exploit-DB), verification steps, impact, remediation.
+4. Prioritized Attack Path – the most likely exploitation sequence.
+5. Recommendations / Quick Wins – patching and mitigation steps.
+
+Important:
+- Populate section 0 with the exact VARIABLE values from the top of the input.
+- When listing exploits, show module names and any CVE numbers found.
+- Keep the report concise and use bullet lists for findings."
+
+Exploit-generation `sgpt` prompt (feed the generated report on STDIN; expect ONLY a Bash script in return):
+"Read the scan report from STDIN and return ONLY a Bash script. Requirements:
+1. Start with a shebang (#!/usr/bin/env bash).
+2. Define and use Target IP, LHOST, and LPORT where necessary and/or required. Get these values from the report, DO NOT use placeholders.
+3. Attempt the highest-priority vulnerability first (prefer RCE > code exec > auth bypass > info leak).
+4. The script must be POSIX/bash-safe and pass a quick syntax check (include a line that runs 'bash -n' or 'shellcheck' at the end).
+5. All msfconsole -x invocations MUST have the entire command string wrapped in double quotes. Use the resource-file approach for complex/long module sequences.
+6. Use a handler-first approach: create an msf resource handler that runs exploit/multi/handler with ExitOnSession false before calling exploits. Force reverse payloads (cmd/unix/reverse_bash) for bind-style modules.
+7. Include verbose progress echos, and an artifact directory (timestamped).
+8. After a successful session, automatically run proof commands (whoami, id, uname -a, pwd) and save outputs in artifacts/.
+9. Echo progress clearly for each exploit, and try the next vulnerability if the first fails.
+10. If metasploit modules do not work or exist, fall back to low-friction PoCs like the vsftpd backdoor, ProFTPD mod_copy, or other common PoCs.
+Return only the Bash script, no commentary."
+
+Return: a single `run_pipeline.sh` file implementing all above.
+

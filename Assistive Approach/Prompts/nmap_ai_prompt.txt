@@ -1,0 +1,1 @@
+Act as a penetration tester and give me a command to scan all vulnerabilities from nmap to target <TARGET_IP>

@@ -1,0 +1,9 @@
+"You are a penetration tester. Analyze this Nmap + Vulners scan and produce a professional penetration test report with the following sections:
+
+1. Executive Summary – high-level overview of the security posture and risks.
+2. Target Information – IP, hostnames, OS, open ports/services.
+3. Detailed Findings – for each service: version, CVEs (with CVSS), known exploits (Metasploit/Exploit-DB), verification steps, impact, remediation.
+4. Prioritized Attack Path – the most likely exploitation sequence.
+5. Recommendations / Quick Wins – patching and mitigation steps.
+
+Format the report in Markdown." | tee "scan_<TARGET_IP>_report.md"
